@@ -4,8 +4,9 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import or_
 
-from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm
+from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm, UserEditForm
 from models import db, connect_db, User, Message
 
 load_dotenv()
@@ -148,12 +149,15 @@ def list_users():
 
     search = request.args.get('q')
 
+    add_csrf_to_g()
+    form = g.csrf_form
+
     if not search:
         users = User.query.all()
     else:
         users = User.query.filter(User.username.like(f"%{search}%")).all()
 
-    return render_template('users/index.html', users=users)
+    return render_template('users/index.html', users=users, form=form)
 
 
 @app.get('/users/<int:user_id>')
@@ -210,7 +214,7 @@ def start_following(follow_id):
     """
 
     if not g.user:
-        flash("Access unauthg.userorized.", "danger")
+        flash("Access unauthorized.", "danger")
         return redirect("/")
 
     followed_user = User.query.get_or_404(follow_id)
@@ -242,7 +246,35 @@ def stop_following(follow_id):
 def profile():
     """Update profile for current user."""
 
-    # IMPLEMENT THIS
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    form = UserEditForm(obj=g.user)
+
+    if form.validate_on_submit():
+        user = User.authenticate(
+            g.user.username,
+            form.password.data)
+
+        if user:
+            user.username = form.username.data,
+            user.email = form.email.data,
+            user.image_url = form.image_url.data,
+            user.header_image_url = form.header_image_url.data,
+            user.bio = form.bio.data
+
+            db.session.commit()
+
+            flash("Edit successful!", "success")
+            return redirect(f"/users/{user.id}")
+
+        else:
+            flash("Invalid credentials.", "danger")
+
+    return render_template("users/edit.html", form=form)
+
+
 
 
 @app.post('/users/delete')
@@ -343,6 +375,8 @@ def homepage():
     if g.user:
         messages = (Message
                     .query
+                    .filter(or_(Message.user == g.user,
+                                Message.user in g.user.following))
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
