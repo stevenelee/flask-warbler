@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_
 
 from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm, UserEditForm
-from models import db, connect_db, User, Message
+from models import db, connect_db, User, Message, Follow
 
 load_dotenv()
 
@@ -35,15 +35,13 @@ def add_user_to_g():
     if CURR_USER_KEY in session:
         g.user = User.query.get(session[CURR_USER_KEY])
 
+
     else:
         g.user = None
+        g.csrf_form = None
 
-
-def add_csrf_to_g():
-    """"Adds csrf form for validation"""
-
+def add_csrf_to_user():
     g.csrf_form = CSRFProtectForm()
-
 
 def do_login(user):
     """Log in user."""
@@ -122,13 +120,14 @@ def login():
 def logout():
     """Handle logout of user and redirect to homepage."""
 
-    add_csrf_to_g()
+    add_csrf_to_user()
     form = g.csrf_form
 
     if form.validate_on_submit():
         do_logout()
         flash("Logged out successfully.")
-        return redirect('/login')
+
+    return redirect('/login')
 
 
 
@@ -149,7 +148,7 @@ def list_users():
 
     search = request.args.get('q')
 
-    add_csrf_to_g()
+    add_csrf_to_user()
     form = g.csrf_form
 
     if not search:
@@ -168,7 +167,7 @@ def show_user(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    add_csrf_to_g()
+    add_csrf_to_user()
     form = g.csrf_form
 
     user = User.query.get_or_404(user_id)
@@ -184,7 +183,7 @@ def show_following(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    add_csrf_to_g()
+    add_csrf_to_user()
     form = g.csrf_form
 
     user = User.query.get_or_404(user_id)
@@ -199,7 +198,7 @@ def show_followers(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    add_csrf_to_g()
+    add_csrf_to_user()
     form = g.csrf_form
 
     user = User.query.get_or_404(user_id)
@@ -283,18 +282,24 @@ def delete_user():
 
     Redirect to signup page.
     """
-
+    #TODO: combine form.validate_on_submit and not g.user
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    do_logout()
+    add_csrf_to_user()
+    form = g.csrf_form
 
-    for message in g.user.messages:
-        db.session.delete(message)
+    if form.validate_on_submit():
 
-    db.session.delete(g.user)
-    db.session.commit()
+        do_logout()
+
+        messages = Message.query.filter(Message.user_id == g.user.id).all()
+        for message in messages:
+            db.session.delete(message)
+
+        db.session.delete(g.user)
+        db.session.commit()
 
 
 
@@ -335,7 +340,7 @@ def show_message(message_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    add_csrf_to_g()
+    add_csrf_to_user()
     form = g.csrf_form
 
     msg = Message.query.get_or_404(message_id)
@@ -349,14 +354,19 @@ def delete_message(message_id):
     Check that this message was written by the current user.
     Redirect to user page on success.
     """
+
     msg = Message.query.get_or_404(message_id)
 
     if not g.user or not msg in g.user.messages:
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    db.session.delete(msg)
-    db.session.commit()
+    add_csrf_to_user()
+    form = g.csrf_form
+
+    if form.validate_on_submit():
+        db.session.delete(msg)
+        db.session.commit()
 
     return redirect(f"/users/{g.user.id}")
 
@@ -372,16 +382,18 @@ def homepage():
     - anon users: no messages
     - logged in: 100 most recent messages of self & followed_users
     """
+
     if g.user:
+        following_ids = [following.id for following in g.user.following] + [g.user.id]
+
         messages = (Message
                     .query
-                    .filter(or_(Message.user == g.user,
-                                Message.user in g.user.following))
+                    .filter(Message.user_id.in_(following_ids))
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
 
-        add_csrf_to_g()
+        add_csrf_to_user()
         form = g.csrf_form
 
         return render_template('home.html', messages=messages, form=form)
