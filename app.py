@@ -164,9 +164,12 @@ def show_user(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
+    add_csrf_to_g()
+    form = g.csrf_form
+
     user = User.query.get_or_404(user_id)
 
-    return render_template('users/show.html', user=user)
+    return render_template('users/show.html',form=form, user=user)
 
 
 @app.get('/users/<int:user_id>/following')
@@ -177,8 +180,11 @@ def show_following(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
+    add_csrf_to_g()
+    form = g.csrf_form
+
     user = User.query.get_or_404(user_id)
-    return render_template('users/following.html', user=user)
+    return render_template('users/following.html',form=form, user=user)
 
 
 @app.get('/users/<int:user_id>/followers')
@@ -189,8 +195,11 @@ def show_followers(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
+    add_csrf_to_g()
+    form = g.csrf_form
+
     user = User.query.get_or_404(user_id)
-    return render_template('users/followers.html', user=user)
+    return render_template('users/followers.html', form=form, user=user)
 
 
 @app.post('/users/follow/<int:follow_id>')
@@ -201,7 +210,7 @@ def start_following(follow_id):
     """
 
     if not g.user:
-        flash("Access unauthorized.", "danger")
+        flash("Access unauthg.userorized.", "danger")
         return redirect("/")
 
     followed_user = User.query.get_or_404(follow_id)
@@ -249,8 +258,13 @@ def delete_user():
 
     do_logout()
 
+    for message in g.user.messages:
+        db.session.delete(message)
+
     db.session.delete(g.user)
     db.session.commit()
+
+
 
     return redirect("/signup")
 
@@ -289,8 +303,11 @@ def show_message(message_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
+    add_csrf_to_g()
+    form = g.csrf_form
+
     msg = Message.query.get_or_404(message_id)
-    return render_template('messages/show.html', message=msg)
+    return render_template('messages/show.html', form=form, message=msg)
 
 
 @app.post('/messages/<int:message_id>/delete')
@@ -300,12 +317,12 @@ def delete_message(message_id):
     Check that this message was written by the current user.
     Redirect to user page on success.
     """
+    msg = Message.query.get_or_404(message_id)
 
-    if not g.user:
+    if not g.user or not msg in g.user.messages:
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    msg = Message.query.get_or_404(message_id)
     db.session.delete(msg)
     db.session.commit()
 
