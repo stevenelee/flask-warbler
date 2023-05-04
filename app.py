@@ -294,9 +294,7 @@ def delete_user():
 
         do_logout()
 
-        messages = Message.query.filter(Message.user_id == g.user.id).all()
-        for message in messages:
-            db.session.delete(message)
+        Message.query.filter(Message.user_id == g.user.id).delete()
 
         db.session.delete(g.user)
         db.session.commit()
@@ -369,6 +367,29 @@ def delete_message(message_id):
         db.session.commit()
 
     return redirect(f"/users/{g.user.id}")
+
+
+@app.post('/messages/<int:message_id>/like')
+def like_message(message_id):
+    """Like a message."""
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    add_csrf_to_user()
+    form = g.csrf_form
+
+    liked_message = Message.query.get_or_404(message_id)
+
+    if form.validate_on_submit() and g.user.id != liked_message.user_id:
+        g.user.liked_messages.append(liked_message)
+        db.session.commit()
+
+    return redirect("/")
+
+
+# @app.post()
 
 
 ##############################################################################

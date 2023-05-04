@@ -97,8 +97,14 @@ class User(db.Model):
         backref="following",
     )
 
+    liked_messages = db.relationship('Message',
+                                     secondary="likes",
+                                     backref="liking_user")
+
+
     def __repr__(self):
         return f"<User #{self.id}: {self.username}, {self.email}>"
+
 
     @classmethod
     def signup(cls, username, email, password, image_url=DEFAULT_IMAGE_URL):
@@ -118,6 +124,7 @@ class User(db.Model):
 
         db.session.add(user)
         return user
+
 
     @classmethod
     def authenticate(cls, username, password):
@@ -140,6 +147,7 @@ class User(db.Model):
 
         return False
 
+
     def is_followed_by(self, other_user):
         """Is this user followed by `other_user`?"""
 
@@ -147,12 +155,21 @@ class User(db.Model):
             user for user in self.followers if user == other_user]
         return len(found_user_list) == 1
 
+
     def is_following(self, other_user):
         """Is this user following `other_use`?"""
 
         found_user_list = [
             user for user in self.following if user == other_user]
         return len(found_user_list) == 1
+
+
+    def is_liking(self, msg):
+        """Is this user liking message?"""
+
+        liked_message_list = [
+            message for message in self.liked_messages if message == msg]
+        return len(liked_message_list) == 1
 
 
 class Message(db.Model):
@@ -180,6 +197,24 @@ class Message(db.Model):
         db.Integer,
         db.ForeignKey('users.id', ondelete='CASCADE'),
         nullable=False,
+    )
+
+
+class Like(db.Model):
+    """Connection of a user <-> message."""
+
+    __tablename__ = 'likes'
+
+    liked_message_id = db.Column(
+        db.Integer,
+        db.ForeignKey('messages.id', ondelete="cascade"),
+        primary_key=True,
+    )
+
+    user_liking_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id', ondelete="cascade"),
+        primary_key=True,
     )
 
 
