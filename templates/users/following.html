@@ -23,13 +23,13 @@
             {% if g.user.is_following(followed_user) %}
             <form method="POST"
                   action="/users/stop-following/{{ followed_user.id }}">
-                  {{form.csrf_token}}
+                  {{ g.csrf_form.hidden_tag() }}
               <button class="btn btn-primary btn-sm">Unfollow</button>
             </form>
             {% else %}
             <form method="POST"
                   action="/users/follow/{{ followed_user.id }}">
-                  {{form.csrf_token}}
+                  {{ g.csrf_form.hidden_tag() }}
               <button class="btn btn-outline-primary btn-sm">
                 Follow
               </button>

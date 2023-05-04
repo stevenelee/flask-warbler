@@ -1,10 +1,11 @@
 {% extends 'users/detail.html' %}
 
+{% block user_details %}
 <div class="col-lg-6 col-md-8 col-sm-12">
   <ul class="list-group" id="messages">
     {% for msg in messages %}
       <li class="list-group-item">
-        <a href="/messages/{{ msg.id }}" class="message-link"/>
+        <a href="/messages/{{ msg.id }}" class="message-link">
         <a href="/users/{{ msg.user.id }}">
           <img src="{{ msg.user.image_url }}" alt="" class="timeline-image">
         </a>
@@ -18,13 +19,13 @@
         {% if g.user.id != msg.user_id %}
           {% if g.user.is_liking(msg) %}
             <form method="POST", action="/messages/{{msg.id}}/unlike" style="z-index: 3;">
-              {{form.csrf_token}}
-              <button>Unlike</button>
+              {{ g.csrf_form.hidden_tag() }}
+              <button class="bi bi-star-fill btn btn-link"></button>
             </form>
           {% else %}
             <form method="POST", action="/messages/{{msg.id}}/like" style="z-index: 3;">
-              {{form.csrf_token}}
-              <button>Like</button>
+              {{ g.csrf_form.hidden_tag() }}
+              <button class="bi bi-star btn btn-link"></button>
             </form>
           {% endif %}
         {% endif %}
@@ -32,3 +33,5 @@
     {% endfor %}
   </ul>
 </div>
+
+{% endblock %}
