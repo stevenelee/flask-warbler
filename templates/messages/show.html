@@ -16,29 +16,44 @@
 
         <div class="message-area">
           <div class="message-heading">
-            <a href="/users/{{ message.user.id }}">
-              @{{ message.user.username }}
-            </a>
+            <div class="container tag-follow-wrapper">
+              <a href="/users/{{ message.user.id }}">
+                @{{ message.user.username }}
+              </a>
 
-            {% if g.user %}
-            {% if g.user.id == message.user.id %}
-            <form method="POST"
-                  action="/messages/{{ message.id }}/delete">
-              <button class="btn btn-outline-danger">Delete</button>
-            </form>
-            {% elif g.user.is_following(message.user) %}
-            <form method="POST"
-                  action="/users/stop-following/{{ message.user.id }}">
-              <button class="btn btn-primary">Unfollow</button>
-            </form>
-            {% else %}
-            <form method="POST"
-                  action="/users/follow/{{ message.user.id }}">
-              <button class="btn btn-outline-primary btn-sm">
-                Follow
-              </button>
-            </form>
-            {% endif %}
+              {% if g.user %}
+              {% if g.user.id == message.user.id %}
+              <form method="POST"
+                    action="/messages/{{ message.id }}/delete">
+                <button class="btn btn-outline-danger">Delete</button>
+              </form>
+              {% elif g.user.is_following(message.user) %}
+              <form method="POST"
+                    action="/users/stop-following/{{ message.user.id }}">
+                <button class="btn btn-primary">Unfollow</button>
+              </form>
+              {% else %}
+              <form method="POST"
+                    action="/users/follow/{{ message.user.id }}">
+                <button class="btn btn-outline-primary btn-sm">
+                  Follow
+                </button>
+              </form>
+              {% endif %}
+              {% endif %}
+            </div>
+            {% if g.user.id != message.user_id %}
+              {% if g.user.is_liking(message) %}
+                <form method="POST", action="/messages/{{message.id}}/unlike" style="z-index: 3;">
+                  {{form.csrf_token}}
+                  <button>Unlike</button>
+                </form>
+              {% else %}
+                <form method="POST", action="/messages/{{message.id}}/like" style="z-index: 3;">
+                  {{form.csrf_token}}
+                  <button>Like</button>
+                </form>
+              {% endif %}
             {% endif %}
           </div>
           <p class="single-message">{{ message.text }}</p>
@@ -46,6 +61,8 @@
               {{ message.timestamp.strftime('%d %B %Y') }}
             </span>
         </div>
+
+
       </li>
     </ul>
   </div>

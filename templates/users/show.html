@@ -21,6 +21,19 @@
             </span>
         <p>{{ message.text }}</p>
       </div>
+      {% if g.user.id != message.user_id %}
+        {% if g.user.is_liking(message) %}
+          <form method="POST", action="/messages/{{message.id}}/unlike" style="z-index: 3;">
+            {{form.csrf_token}}
+            <button>Unlike</button>
+          </form>
+        {% else %}
+          <form method="POST", action="/messages/{{message.id}}/like" style="z-index: 3;">
+            {{form.csrf_token}}
+            <button>Like</button>
+          </form>
+        {% endif %}
+      {% endif %}
     </li>
 
     {% endfor %}

@@ -52,18 +52,26 @@
             <a href="/users/{{ msg.user.id }}">
               <img src="{{ msg.user.image_url }}" alt="" class="timeline-image">
             </a>
+
             <div class="message-area">
-              {% if g.user.id != msg.user_id %}
-                {% if g.user.is_liking(msg) %}
-                  <button>Test</button>
-                  {% else %}
-                  <button>Blah</button>
-                  {% endif %}
-                {% endif %}
+
               <a href="/users/{{ msg.user.id }}">@{{ msg.user.username }}</a>
               <span class="text-muted">{{ msg.timestamp.strftime('%d %B %Y') }}</span>
               <p>{{ msg.text }}</p>
             </div>
+            {% if g.user.id != msg.user_id %}
+              {% if g.user.is_liking(msg) %}
+                <form method="POST", action="/messages/{{msg.id}}/unlike" style="z-index: 3;">
+                  {{form.csrf_token}}
+                  <button>Unlike</button>
+                </form>
+              {% else %}
+                <form method="POST", action="/messages/{{msg.id}}/like" style="z-index: 3;">
+                  {{form.csrf_token}}
+                  <button>Like</button>
+                </form>
+              {% endif %}
+            {% endif %}
           </li>
         {% endfor %}
       </ul>

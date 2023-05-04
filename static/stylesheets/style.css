@@ -194,6 +194,7 @@ nav + .container {
 
 .message-area {
   margin-left: 10px;
+  width: 100%;
 }
 
 #warbler-hero {
@@ -510,7 +511,12 @@ p.card-bio {
 }
 
 #messages.no-hover .message-heading .btn {
-  min-width: 105px;
+  min-width: 80px;
+  display: inline;
+}
+
+.tag-follow-wrapper > form{
+  display:inline;
 }
 
 .messages-like {

@@ -389,7 +389,24 @@ def like_message(message_id):
     return redirect("/")
 
 
-# @app.post()
+@app.post('/messages/<int:message_id>/unlike')
+def unlike_message(message_id):
+    """Unlike a message."""
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    add_csrf_to_user()
+    form = g.csrf_form
+
+    unliked_message = Message.query.get_or_404(message_id)
+
+    if form.validate_on_submit() and g.user.id != unliked_message.user_id:
+        g.user.liked_messages.remove(unliked_message)
+        db.session.commit()
+
+    return redirect("/")
 
 
 ##############################################################################
