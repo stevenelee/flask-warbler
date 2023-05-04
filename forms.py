@@ -14,12 +14,12 @@ class UserAddForm(FlaskForm):
 
     username = StringField(
         'Username',
-        validators=[InputRequired(), Length(max=30)],
+        validators=[InputRequired(), Length(min=1,max=30)],
     )
 
     email = StringField(
         'E-mail',
-        validators=[InputRequired(), Email(), Length(max=50)],
+        validators=[InputRequired(), Email(), Length(min=1,max=50)],
     )
 
     password = PasswordField(

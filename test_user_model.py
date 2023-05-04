@@ -9,7 +9,8 @@ import os
 from unittest import TestCase
 
 from models import db, User, Message, Follow
-
+from sqlalchemy.exc import IntegrityError
+from psycopg2.errors import UniqueViolation
 # BEFORE we import our app, let's set an environmental variable
 # to use a different database for tests (we need to do this
 # before we import our app, since that will have already
@@ -51,3 +52,58 @@ class UserModelTestCase(TestCase):
         # User should have no messages & no followers
         self.assertEqual(len(u1.messages), 0)
         self.assertEqual(len(u1.followers), 0)
+
+class UserFollowMethodsTestCase(UserModelTestCase):
+    def test_is_following(self):
+        """Test User class method is_following True"""
+        u1 = User.query.get(self.u1_id)
+        u2 = User.query.get(self.u2_id)
+
+        u1.following.append(u2)
+        self.assertTrue(u1.is_following(u2))
+
+    def test_is_not_following(self):
+        """Test User class method is_following False"""
+        u1 = User.query.get(self.u1_id)
+        u2 = User.query.get(self.u2_id)
+
+        self.assertFalse(u1.is_following(u2))
+
+    def test_is_followed_by(self):
+        """Test User class method is_followed_by True"""
+        u1 = User.query.get(self.u1_id)
+        u2 = User.query.get(self.u2_id)
+
+        u1.followers.append(u2)
+        self.assertTrue(u1.is_followed_by(u2))
+
+    def test_is_not_followed_by(self):
+        """Test User class method is_followed_by False"""
+        u1 = User.query.get(self.u1_id)
+        u2 = User.query.get(self.u2_id)
+
+        self.assertFalse(u1.is_followed_by(u2))
+
+class UserSignupTestCase(UserModelTestCase):
+    def test_signup_valid_user(self):
+        """Test User class method .signup valid user"""
+
+        u3 = User.signup("u3", "u3@email.com", "password", None)
+        db.session.commit()
+
+        self.assertIsNotNone(User.query.get(u3.id))
+
+    def test_signup_invalid_user(self):
+        """Test User class method .signup invalid user"""
+
+        #username already exists
+        with self.assertRaises(IntegrityError):
+            User.signup("u1", "u3@email.com", "password", None)
+            db.session.commit()
+
+        #empty string username and email
+        with self.assertRaises(Exception):
+            User.signup("", "", password="password", image_url=None)
+            db.session.commit()
+
+class UserAuthenticateTestCase(UserModelTestCase):
