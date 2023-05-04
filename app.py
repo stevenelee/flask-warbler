@@ -144,7 +144,7 @@ def list_users():
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     search = request.args.get('q')
 
@@ -165,7 +165,7 @@ def show_user(user_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     add_csrf_to_user()
     form = g.csrf_form
@@ -181,7 +181,7 @@ def show_following(user_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     add_csrf_to_user()
     form = g.csrf_form
@@ -196,7 +196,7 @@ def show_followers(user_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     add_csrf_to_user()
     form = g.csrf_form
@@ -214,7 +214,7 @@ def start_following(follow_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     followed_user = User.query.get_or_404(follow_id)
     g.user.following.append(followed_user)
@@ -232,7 +232,7 @@ def stop_following(follow_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     followed_user = User.query.get_or_404(follow_id)
     g.user.following.remove(followed_user)
@@ -247,7 +247,7 @@ def profile():
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     form = UserEditForm(obj=g.user)
 
@@ -285,7 +285,7 @@ def delete_user():
     #TODO: combine form.validate_on_submit and not g.user
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     add_csrf_to_user()
     form = g.csrf_form
@@ -316,7 +316,7 @@ def add_message():
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     form = MessageForm()
 
@@ -336,7 +336,7 @@ def show_message(message_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     add_csrf_to_user()
     form = g.csrf_form
@@ -357,7 +357,7 @@ def delete_message(message_id):
 
     if not g.user or not msg in g.user.messages:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     add_csrf_to_user()
     form = g.csrf_form
@@ -375,7 +375,7 @@ def like_message(message_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     add_csrf_to_user()
     form = g.csrf_form
@@ -395,7 +395,7 @@ def unlike_message(message_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/")
+        return redirect("/", 403)
 
     add_csrf_to_user()
     form = g.csrf_form
