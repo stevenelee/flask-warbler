@@ -48,7 +48,7 @@
       <ul class="list-group" id="messages">
         {% for msg in messages %}
           <li class="list-group-item">
-            <a href="/messages/{{ msg.id }}" class="message-link"/>
+            <a href="/messages/{{ msg.id }}" class="message-link">
             <a href="/users/{{ msg.user.id }}">
               <img src="{{ msg.user.image_url }}" alt="" class="timeline-image">
             </a>
@@ -61,14 +61,14 @@
             </div>
             {% if g.user.id != msg.user_id %}
               {% if g.user.is_liking(msg) %}
-                <form method="POST", action="/messages/{{msg.id}}/unlike" style="z-index: 3;">
-                  {{form.csrf_token}}
-                  <button>Unlike</button>
+                <form method="POST" action="/messages/{{msg.id}}/unlike" style="z-index: 3;">
+                  {{ g.csrf_form.hidden_tag() }}
+                  <button class="bi bi-star-fill btn btn-link"></button>
                 </form>
               {% else %}
-                <form method="POST", action="/messages/{{msg.id}}/like" style="z-index: 3;">
-                  {{form.csrf_token}}
-                  <button>Like</button>
+                <form method="POST" action="/messages/{{msg.id}}/like" style="z-index: 3;">
+                  {{ g.csrf_form.hidden_tag() }}
+                  <button class="bi bi-star btn btn-link"></button>
                 </form>
               {% endif %}
             {% endif %}

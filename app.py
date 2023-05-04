@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import or_
 
 from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm, UserEditForm
 from models import db, connect_db, User, Message, Follow
@@ -19,7 +18,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
-toolbar = DebugToolbarExtension(app)
+# toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
 
@@ -35,13 +34,16 @@ def add_user_to_g():
     if CURR_USER_KEY in session:
         g.user = User.query.get(session[CURR_USER_KEY])
 
-
     else:
         g.user = None
-        g.csrf_form = None
 
+
+@app.before_request
 def add_csrf_to_user():
+    """Add CRSF form to g.user"""
+
     g.csrf_form = CSRFProtectForm()
+
 
 def do_login(user):
     """Log in user."""
@@ -120,7 +122,6 @@ def login():
 def logout():
     """Handle logout of user and redirect to homepage."""
 
-    add_csrf_to_user()
     form = g.csrf_form
 
     if form.validate_on_submit():
@@ -148,15 +149,12 @@ def list_users():
 
     search = request.args.get('q')
 
-    add_csrf_to_user()
-    form = g.csrf_form
-
     if not search:
         users = User.query.all()
     else:
         users = User.query.filter(User.username.like(f"%{search}%")).all()
 
-    return render_template('users/index.html', users=users, form=form)
+    return render_template('users/index.html', users=users)
 
 
 @app.get('/users/<int:user_id>')
@@ -167,12 +165,9 @@ def show_user(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    add_csrf_to_user()
-    form = g.csrf_form
-
     user = User.query.get_or_404(user_id)
 
-    return render_template('users/show.html',form=form, user=user)
+    return render_template('users/show.html', user=user)
 
 
 @app.get('/users/<int:user_id>/following')
@@ -183,11 +178,8 @@ def show_following(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    add_csrf_to_user()
-    form = g.csrf_form
-
     user = User.query.get_or_404(user_id)
-    return render_template('users/following.html',form=form, user=user)
+    return render_template('users/following.html', user=user)
 
 
 @app.get('/users/<int:user_id>/followers')
@@ -198,11 +190,8 @@ def show_followers(user_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    add_csrf_to_user()
-    form = g.csrf_form
-
     user = User.query.get_or_404(user_id)
-    return render_template('users/followers.html', form=form, user=user)
+    return render_template('users/followers.html', user=user)
 
 
 @app.post('/users/follow/<int:follow_id>')
@@ -274,8 +263,6 @@ def profile():
     return render_template("users/edit.html", form=form)
 
 
-
-
 @app.post('/users/delete')
 def delete_user():
     """Delete user.
@@ -287,7 +274,6 @@ def delete_user():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    add_csrf_to_user()
     form = g.csrf_form
 
     if form.validate_on_submit():
@@ -300,9 +286,24 @@ def delete_user():
         db.session.commit()
 
 
-
+    flash(f"{g.user.username} deleted.", "success")
     return redirect("/signup")
 
+
+@app.get('/users/<int:user_id>/likes')
+def show_liked_messages(user_id):
+    """Display liked messages"""
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    user = User.query.get(user_id)
+
+    messages = user.liked_messages
+    #TODO: can refer to messages via user, don't need to pass through
+
+    return render_template('users/likes.html', user=user, messages=messages)
 
 ##############################################################################
 # Messages routes:
@@ -338,11 +339,8 @@ def show_message(message_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    add_csrf_to_user()
-    form = g.csrf_form
-
     msg = Message.query.get_or_404(message_id)
-    return render_template('messages/show.html', form=form, message=msg)
+    return render_template('messages/show.html', message=msg)
 
 
 @app.post('/messages/<int:message_id>/delete')
@@ -359,7 +357,6 @@ def delete_message(message_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    add_csrf_to_user()
     form = g.csrf_form
 
     if form.validate_on_submit():
@@ -377,16 +374,15 @@ def like_message(message_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    add_csrf_to_user()
-    form = g.csrf_form
-
     liked_message = Message.query.get_or_404(message_id)
+
+    form = g.csrf_form
 
     if form.validate_on_submit() and g.user.id != liked_message.user_id:
         g.user.liked_messages.append(liked_message)
         db.session.commit()
 
-    return redirect("/")
+    return redirect(request.referrer)
 
 
 @app.post('/messages/<int:message_id>/unlike')
@@ -397,16 +393,15 @@ def unlike_message(message_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    add_csrf_to_user()
-    form = g.csrf_form
-
     unliked_message = Message.query.get_or_404(message_id)
+
+    form = g.csrf_form
 
     if form.validate_on_submit() and g.user.id != unliked_message.user_id:
         g.user.liked_messages.remove(unliked_message)
         db.session.commit()
 
-    return redirect("/")
+    return redirect(request.referrer)
 
 
 ##############################################################################
@@ -431,10 +426,7 @@ def homepage():
                     .limit(100)
                     .all())
 
-        add_csrf_to_user()
-        form = g.csrf_form
-
-        return render_template('home.html', messages=messages, form=form)
+        return render_template('home.html', messages=messages)
 
     else:
         return render_template('home-anon.html')
