@@ -143,8 +143,6 @@ class UserLogInTestCase(UserBaseViewTestCase):
             self.assertIn("Invalid credentials.", html)
 
 
-
-
 class UserLogOutTestCase(UserBaseViewTestCase):
 
     def test_logout_user(self):
@@ -162,8 +160,34 @@ class UserLogOutTestCase(UserBaseViewTestCase):
             self.assertIn("user login page", html)
 
 
+class DeleteUserTestCase(UserBaseViewTestCase):
+
+    def test_delete_user(self):
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1_id
+
+            resp = c.post("/users/delete",
+                          follow_redirects=True)
+
+            html = resp.get_data(as_text=True)
+
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn("u1 deleted.", html)
 
 
+class FollowUserTestCase(UserBaseViewTestCase):
 
+    def test_follow_user(self):
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1_id
 
+            resp = c.post(f"/users/follow/{self.u2_id}",
+                            follow_redirects=True)
 
+            html = resp.get_data(as_text=True)
+
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn("Unfollow", html)
+            self.assertIn("@u2", html)
