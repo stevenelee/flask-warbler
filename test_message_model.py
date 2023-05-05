@@ -92,6 +92,8 @@ class DeleteMessageModelTestCase(MessageModelTestCase):
         self.assertEqual(len(u1.messages), 0)
         self.assertNotIn(m1, Message.query.all())
 
+
+    def test_delete_user_and_messages(self):
         """Test that messages are deleted when user is deleted"""
 
         u2 = User.query.get(self.u2_id)
