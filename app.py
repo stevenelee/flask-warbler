@@ -378,7 +378,9 @@ def like_message(message_id):
 
     form = g.csrf_form
 
-    if form.validate_on_submit() and g.user.id != liked_message.user_id:
+    if form.validate_on_submit() and (g.user.id != liked_message.user_id)\
+    and not (liked_message in g.user.liked_messages):
+
         g.user.liked_messages.append(liked_message)
         db.session.commit()
 
@@ -397,7 +399,9 @@ def unlike_message(message_id):
 
     form = g.csrf_form
 
-    if form.validate_on_submit() and g.user.id != unliked_message.user_id:
+    if form.validate_on_submit() and (g.user.id != unliked_message.user_id)\
+        and (unliked_message in g.user.liked_messages):
+        
         g.user.liked_messages.remove(unliked_message)
         db.session.commit()
 

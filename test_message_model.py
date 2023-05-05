@@ -78,6 +78,17 @@ class AddMessageModelTestCase(MessageModelTestCase):
         self.assertEqual(len(u1.messages), 2)
         self.assertIn(m3, Message.query.all())
 
+    def test_add_invalid_message(self):
+        """Test the message with invalid inputs is not added"""
+
+        u1 = User.query.get(self.u1_id)
+
+        with self.assertRaises(IntegrityError):
+
+            m3 = Message(text=None, user_id=u1.id)
+
+            db.session.add(m3)
+            db.session.commit()
 
 class DeleteMessageModelTestCase(MessageModelTestCase):
     def test_delete_message(self):
@@ -104,8 +115,33 @@ class DeleteMessageModelTestCase(MessageModelTestCase):
 
         self.assertNotIn(m2, Message.query.all())
 
-        #TODO: ask why messages aren't being deleted when user is deleted and
-        # why we need to use cascade="all, delete-orphan" in relationship
+class LikeMessageModelTestCase(MessageModelTestCase):
+    def test_like_message(self):
+        """Test that liked message is added to user.liked_messages"""
+
+        u1 = User.query.get(self.u1_id)
+        m2 = Message.query.get(self.m2_id)
+
+        u1.liked_messages.append(m2)
+
+        self.assertTrue(u1.is_liking(m2))
+        self.assertEqual(len(u1.liked_messages), 1)
+
+    def test_unlike_message(self):
+        """Test that unliked message is removed from user.liked_messages"""
+
+        u1 = User.query.get(self.u1_id)
+        m2 = Message.query.get(self.m2_id)
+
+        u1.liked_messages.append(m2)
+        u1.liked_messages.remove(m2)
+
+        self.assertFalse(u1.is_liking(m2))
+        self.assertEqual(len(u1.liked_messages), 0)
+
+
+
+
 
 
 
