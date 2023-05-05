@@ -2,7 +2,7 @@
 
 # run these tests like:
 #
-#    python -m unittest test_user_model.py
+#    python -m unittest test_message_model.py
 
 
 import os
