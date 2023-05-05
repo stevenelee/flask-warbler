@@ -2,7 +2,7 @@
 {% block user_details %}
 <div class="col-sm-6">
   <ul class="list-group" id="messages">
-
+    <!-- user messages list -->
     {% for message in user.messages %}
 
     <li class="list-group-item">
@@ -21,19 +21,6 @@
             </span>
         <p>{{ message.text }}</p>
       </div>
-      {% if g.user.id != message.user_id %}
-        {% if g.user.is_liking(message) %}
-          <form method="POST", action="/messages/{{message.id}}/unlike" style="z-index: 3;">
-            {{ g.csrf_form.hidden_tag() }}
-            <button class="bi bi-star-fill btn btn-link"></button>
-          </form>
-        {% else %}
-          <form method="POST", action="/messages/{{message.id}}/like" style="z-index: 3;">
-            {{ g.csrf_form.hidden_tag() }}
-            <button class="bi bi-star btn btn-link"></button>
-          </form>
-        {% endif %}
-      {% endif %}
     </li>
 
     {% endfor %}

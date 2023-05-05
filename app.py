@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 
 from flask import Flask, render_template, request, flash, redirect, session, g
-from flask_debugtoolbar import DebugToolbarExtension
+#from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
 from forms import UserAddForm, LoginForm, MessageForm, CSRFProtectForm, UserEditForm
@@ -16,7 +16,7 @@ app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
 app.config['SQLALCHEMY_ECHO'] = False
-app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
+#app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
 # toolbar = DebugToolbarExtension(app)
 
@@ -145,7 +145,7 @@ def list_users():
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     search = request.args.get('q')
 
@@ -163,20 +163,20 @@ def show_user(user_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     user = User.query.get_or_404(user_id)
 
     return render_template('users/show.html', user=user)
 
 
-@app.get('/users/<int:user_id>/following')
+@app.get('/users/<int:user_id>/following/')
 def show_following(user_id):
     """Show list of people this user is following."""
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     user = User.query.get_or_404(user_id)
     return render_template('users/following.html', user=user)
@@ -188,7 +188,7 @@ def show_followers(user_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     user = User.query.get_or_404(user_id)
     return render_template('users/followers.html', user=user)
@@ -203,7 +203,7 @@ def start_following(follow_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     followed_user = User.query.get_or_404(follow_id)
     g.user.following.append(followed_user)
@@ -221,7 +221,7 @@ def stop_following(follow_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     followed_user = User.query.get_or_404(follow_id)
     g.user.following.remove(followed_user)
@@ -236,7 +236,7 @@ def profile():
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     form = UserEditForm(obj=g.user)
 
@@ -272,7 +272,7 @@ def delete_user():
     #TODO: combine form.validate_on_submit and not g.user
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     form = g.csrf_form
 
@@ -317,7 +317,7 @@ def add_message():
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     form = MessageForm()
 
@@ -337,7 +337,7 @@ def show_message(message_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     msg = Message.query.get_or_404(message_id)
     return render_template('messages/show.html', message=msg)
@@ -353,9 +353,9 @@ def delete_message(message_id):
 
     msg = Message.query.get_or_404(message_id)
 
-    if not g.user or not msg in g.user.messages:
+    if not g.user or not (msg in g.user.messages):
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     form = g.csrf_form
 
@@ -372,7 +372,7 @@ def like_message(message_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     liked_message = Message.query.get_or_404(message_id)
 
@@ -393,7 +393,7 @@ def unlike_message(message_id):
 
     if not g.user:
         flash("Access unauthorized.", "danger")
-        return redirect("/", 403)
+        return redirect("/")
 
     unliked_message = Message.query.get_or_404(message_id)
 
@@ -401,7 +401,7 @@ def unlike_message(message_id):
 
     if form.validate_on_submit() and (g.user.id != unliked_message.user_id)\
         and (unliked_message in g.user.liked_messages):
-        
+
         g.user.liked_messages.remove(unliked_message)
         db.session.commit()
 

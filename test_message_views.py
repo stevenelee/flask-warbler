@@ -44,16 +44,23 @@ class MessageBaseViewTestCase(TestCase):
         User.query.delete()
 
         u1 = User.signup("u1", "u1@email.com", "password", None)
+        u2 = User.signup("u2", "u2@email.com", "password", None)
         db.session.flush()
 
         m1 = Message(text="m1-text", user_id=u1.id)
-        db.session.add_all([m1])
+        m2 = Message(text="m2-text", user_id=u2.id)
+        db.session.add_all([m1,m2])
         db.session.commit()
 
         self.u1_id = u1.id
         self.m1_id = m1.id
+        self.u2_id = u2.id
+        self.m2_id = m2.id
 
         self.client = app.test_client()
+
+    def tearDown(self):
+        db.session.rollback()
 
 
 class MessageAddViewTestCase(MessageBaseViewTestCase):
@@ -71,3 +78,51 @@ class MessageAddViewTestCase(MessageBaseViewTestCase):
             self.assertEqual(resp.status_code, 302)
 
             Message.query.filter_by(text="Hello").one()
+
+class DeleteMessageTestCase(MessageBaseViewTestCase):
+    def test_delete_own_message(self):
+        with self.client as c:
+                with c.session_transaction() as sess:
+                    sess[CURR_USER_KEY] = self.u1_id
+
+                resp = c.post(f'/messages/{self.m1_id}/delete',
+                              follow_redirects=True)
+
+                html = resp.get_data(as_text=True)
+
+                self.assertEqual(resp.status_code, 200)
+                self.assertNotIn("m1-text", html)
+                self.assertIn("user messages list", html)
+
+
+    def test_delete_other_user_message(self):
+        with self.client as c:
+                with c.session_transaction() as sess:
+                    sess[CURR_USER_KEY] = self.u1_id
+
+                c.post(f'/users/follow/{self.u2_id}')
+
+                resp = c.post(f'/messages/{self.m2_id}/delete',
+                              follow_redirects=True)
+
+                html = resp.get_data(as_text=True)
+
+                self.assertEqual(resp.status_code, 200)
+                self.assertIn("m2-text", html)
+                self.assertIn("Access unauthorized.", html)
+
+# class LikeMessageTestCase(MessageBaseViewTestCase):
+#      def test_like_own_message(self):
+#         with self.client as c:
+#             with c.session_transaction() as sess:
+#                 sess[CURR_USER_KEY] = self.u1_id
+
+#      def test_like_message(self):
+#         with self.client as c:
+#             with c.session_transaction() as sess:
+#                 sess[CURR_USER_KEY] = self.u1_id
+
+
+
+
+
